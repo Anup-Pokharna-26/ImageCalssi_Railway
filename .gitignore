@@ -1,0 +1,36 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Credentials
+credentials.json
+token.pickle
+
+# Uploaded images
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Model files
+model/*
+!model/.gitkeep
