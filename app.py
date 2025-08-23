@@ -188,12 +188,13 @@ def favicon():
 @app.route('/health')
 def health_check():
     """Health check endpoint for Railway deployment"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': time.time(),
-        'model_loaded': model is not None,
-        'classes_loaded': len(CLASS_NAMES) > 0
-    }), 200
+    # return jsonify({
+    #     'status': 'healthy',
+    #     'timestamp': time.time(),
+    #     'model_loaded': model is not None,
+    #     'classes_loaded': len(CLASS_NAMES) > 0
+    # }), 200
+    return "OK", 200
 
 @app.route('/retrain')
 def retrain():
