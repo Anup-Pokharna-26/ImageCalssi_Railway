@@ -185,7 +185,7 @@ def index():
 def favicon():
     return '', 204  # No content response
 
-@app.route('/health')
+@app.route('/')
 def health_check():
     """Health check endpoint for Railway deployment"""
     return jsonify({
