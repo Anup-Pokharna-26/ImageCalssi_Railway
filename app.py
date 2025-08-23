@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import cv2
 import time
 from download_model import download_model, download_class_names, get_model_timestamp, COLAB_NOTEBOOK_URL
-from ensemble_predictor import EnsemblePredictor
+from ensemble_predictor_fixed import EnsemblePredictorFixed
 from smart_preprocessing import SmartPreprocessor
 
 app = Flask(__name__)
@@ -56,13 +56,30 @@ def load_model():
             print("Model not found. Downloading...")
             download_model()
         
-        # Load the model
-        model = tf.keras.models.load_model(MODEL_PATH)
+        # Load the model with compile=False to avoid optimizer issues
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        # Recompile with appropriate settings
+        model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
+        print(f"Model loaded successfully!")
+        print(f"Model input shape: {model.input_shape}")
+        print(f"Model output shape: {model.output_shape}")
         last_model_timestamp = get_model_timestamp()
         return model
     except Exception as e:
         print(f"Error loading model: {e}")
-        return None
+        print("Attempting to load with compile=False...")
+        try:
+            model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+            print(f"Model loaded with compile=False")
+            print(f"Model input shape: {model.input_shape}")
+            return model
+        except Exception as e2:
+            print(f"Still failed: {e2}")
+            return None
 
 # Check if model needs to be reloaded (every 5 minutes)
 def check_model_reload():
@@ -92,8 +109,9 @@ last_model_check = time.time()
 ensemble_predictor = None
 if model is not None and CLASS_NAMES:
     try:
-        ensemble_predictor = EnsemblePredictor(MODEL_PATH, 'model/class_names.txt')
-        print("✅ Enhanced ensemble predictor initialized")
+        # Use the fixed ensemble predictor that accepts an already loaded model
+        ensemble_predictor = EnsemblePredictorFixed(model, CLASS_NAMES)
+        print("Enhanced ensemble predictor initialized successfully")
     except Exception as e:
         print(f"Warning: Could not initialize ensemble predictor: {e}")
 
@@ -103,6 +121,18 @@ if model is None:
     
 if not CLASS_NAMES:
     print("Warning: No class names found. Predictions will not be labeled correctly.")
+
+
+
+def prepare_image(filepath, target_size=(224, 224)):
+    """Preprocess image to RGB for current model"""
+    img = cv2.imread(filepath, cv2.IMREAD_COLOR)  # always 3 channels
+    if img is None:
+        raise ValueError("Could not read image")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+    img = cv2.resize(img, target_size)
+    img = img.astype("float32") / 255.0
+    return np.expand_dims(img, axis=0)
 
 @app.route('/')
 def index():
@@ -141,17 +171,14 @@ def predict():
             file.save(filepath)
             
             # Preprocess the image
-            img = cv2.imread(filepath)
-            if img is None:
-                return jsonify({'error': 'Unable to read the image file. Please upload a valid image.'}), 400
-            
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = cv2.resize(img, (224, 224))
-            img = img.astype('float32') / 255.0
-            img = np.expand_dims(img, axis=0)
+            try:
+                img = prepare_image(filepath)
+            except Exception as e:
+                return jsonify({'error': f'Unable to read the image file: {str(e)}'}), 400
             
             # Make prediction
             prediction = model.predict(img)
+
             
             # Get top 3 predictions for better user experience
             top_3_indices = np.argsort(prediction[0])[-3:][::-1]
@@ -351,6 +378,9 @@ def predict_smart():
             return jsonify({'error': f'Error processing image: {str(e)}'}), 500
     
     return jsonify({'error': 'File type not allowed'})
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

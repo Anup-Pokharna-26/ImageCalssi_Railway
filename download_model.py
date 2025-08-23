@@ -3,6 +3,7 @@ import gdown
 import numpy as np
 
 # Configuration
+# https://drive.google.com/file/d/10Y8JsMi6GjiYNm9s1c2zzEXGH02mIFtC/view?usp=sharing
 MODEL_DRIVE_URL = "https://drive.google.com/uc?id=10Y8JsMi6GjiYNm9s1c2zzEXGH02mIFtC"  # Replace with your model's shared link
 # Update this URL to point to a specific file, not a folder
 CLASS_NAMES_URL = "https://drive.google.com/uc?id=1yrWuqmKesWPIhxbEzX07lida-BbW9-QF"  # Replace with your class names file link
