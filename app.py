@@ -100,27 +100,55 @@ def check_model_reload():
             global CLASS_NAMES
             CLASS_NAMES = load_class_names()
 
-# Initialize model and class names
-CLASS_NAMES = load_class_names()
-model = load_model()
-last_model_check = time.time()
-
-# Initialize ensemble predictor
+# Initialize variables with safe defaults
+CLASS_NAMES = []
+model = None
 ensemble_predictor = None
-if model is not None and CLASS_NAMES:
-    try:
-        # Use the fixed ensemble predictor that accepts an already loaded model
-        ensemble_predictor = EnsemblePredictorFixed(model, CLASS_NAMES)
-        print("Enhanced ensemble predictor initialized successfully")
-    except Exception as e:
-        print(f"Warning: Could not initialize ensemble predictor: {e}")
+last_model_check = time.time()
+last_model_timestamp = 0
 
-# Check if model is loaded
-if model is None:
-    print("Warning: Model could not be loaded. Predictions will not work.")
+def initialize_app():
+    """Initialize app components with error handling"""
+    global CLASS_NAMES, model, ensemble_predictor, last_model_timestamp
     
-if not CLASS_NAMES:
-    print("Warning: No class names found. Predictions will not be labeled correctly.")
+    print("🔄 Initializing application...")
+    
+    try:
+        # Load class names first (faster and less likely to fail)
+        CLASS_NAMES = load_class_names()
+        print(f"✅ Loaded {len(CLASS_NAMES)} class names")
+    except Exception as e:
+        print(f"⚠️  Error loading class names: {e}")
+        CLASS_NAMES = ["class_0", "class_1", "class_2", "class_3", "class_4"]
+    
+    # Try to load model (this might take time or fail)
+    try:
+        model = load_model()
+        if model is not None:
+            print("✅ Model loaded successfully")
+        else:
+            print("⚠️  Model loading failed, but app will continue")
+    except Exception as e:
+        print(f"⚠️  Error during model loading: {e}")
+        model = None
+    
+    # Initialize ensemble predictor only if model is available
+    if model is not None and CLASS_NAMES:
+        try:
+            ensemble_predictor = EnsemblePredictorFixed(model, CLASS_NAMES)
+            print("✅ Enhanced ensemble predictor initialized")
+        except Exception as e:
+            print(f"⚠️  Could not initialize ensemble predictor: {e}")
+            ensemble_predictor = None
+    
+    print("🚀 Application initialization complete")
+
+# Initialize the application
+try:
+    initialize_app()
+except Exception as e:
+    print(f"❌ Error during app initialization: {e}")
+    print("🔄 App will continue with limited functionality")
 
 
 
@@ -136,11 +164,36 @@ def prepare_image(filepath, target_size=(224, 224)):
 
 @app.route('/')
 def index():
-    return render_template('index.html', colab_url=COLAB_NOTEBOOK_URL)
+    try:
+        return render_template('index.html', colab_url=COLAB_NOTEBOOK_URL)
+    except Exception as e:
+        print(f"Error serving index page: {e}")
+        # Fallback response if template fails
+        return f"""
+        <html>
+        <head><title>Image Classifier</title></head>
+        <body>
+            <h1>Image Classifier</h1>
+            <p>Application is starting up... Please refresh in a moment.</p>
+            <p>Model Status: {'Loaded' if model is not None else 'Loading...'}</p>
+            <p>Classes Status: {len(CLASS_NAMES)} classes loaded</p>
+        </body>
+        </html>
+        """, 200
 
 @app.route('/favicon.ico')
 def favicon():
     return '', 204  # No content response
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Railway deployment"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': time.time(),
+        'model_loaded': model is not None,
+        'classes_loaded': len(CLASS_NAMES) > 0
+    }), 200
 
 @app.route('/retrain')
 def retrain():
