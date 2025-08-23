@@ -23,4 +23,5 @@ RUN mkdir -p static/uploads model
 # Set environment variable to disable TensorFlow warnings
 ENV TF_CPP_MIN_LOG_LEVEL=2
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+# CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 8 --timeout 0 app:app"]
