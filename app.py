@@ -435,7 +435,6 @@ def predict_smart():
 
 
 
-
 if __name__ == '__main__':
     # Production-ready configuration
     port = int(os.environ.get('PORT', 5000))
