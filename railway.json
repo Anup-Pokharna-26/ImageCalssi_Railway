@@ -5,21 +5,9 @@
     "buildCommand": "pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "gunicorn app:app --timeout 300 --workers 1 --max-requests 50 --worker-class sync",
+    "startCommand": "gunicorn --bind 0.0.0.0:$PORT app:app --timeout 300 --workers 1 --max-requests 50 --worker-class sync",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "FLASK_ENV": "production",
-        "FLASK_DEBUG": "False",
-        "PYTHONUNBUFFERED": "1",
-        "TF_CPP_MIN_LOG_LEVEL": "2",
-        "PYTHONPATH": ".",
-        "WEB_CONCURRENCY": "1"
-      }
-    }
   }
 }
