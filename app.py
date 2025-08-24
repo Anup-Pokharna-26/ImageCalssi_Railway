@@ -446,4 +446,4 @@ if __name__ == '__main__':
     print(f"🤖 Model loaded: {model is not None}")
     print(f"📋 Classes loaded: {len(CLASS_NAMES)}")
     
-    app.run(debug=debug_mode, host='0.0.0.0', port=port, threaded=True)
+    app.run(debug=debug_mode, host='0.0.0.0', port=port, threaded=False)
